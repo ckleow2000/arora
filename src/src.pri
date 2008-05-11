@@ -12,7 +12,7 @@ UI_DIR = .ui
 MOC_DIR = .moc
 OBJECTS_DIR = .obj
 
-QT += webkit network
+QT += webkit network script
 
 GITVERSION=$$system(git log -n1 --pretty=format:%h)
 GITCHANGENUMBER=$$system(git log --pretty=format:%h | wc -l)
@@ -44,6 +44,7 @@ HEADERS += \
     downloadmanager.h \
     edittableview.h \
     edittreeview.h \
+    extensions.h \
     history.h \
     modelmenu.h \
     networkaccessmanager.h \
@@ -70,6 +71,7 @@ SOURCES += \
     downloadmanager.cpp \
     edittableview.cpp \
     edittreeview.cpp \
+    extensions.cpp \
     history.cpp \
     modelmenu.cpp \
     networkaccessmanager.cpp \
