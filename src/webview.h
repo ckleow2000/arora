@@ -92,6 +92,7 @@ protected:
 #if !defined(QT_NO_UITOOLS)
     QObject *createPlugin(const QString &classId, const QUrl &url, const QStringList &paramNames, const QStringList &paramValues);
 #endif
+    QString userAgentForUrl(const QUrl &url) const;
 
 private slots:
     void handleUnsupportedContent(QNetworkReply *reply);

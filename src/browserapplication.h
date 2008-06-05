@@ -77,6 +77,7 @@ class BookmarksManager;
 class BrowserMainWindow;
 class CookieJar;
 class DownloadManager;
+class ExtensionManager;
 class HistoryManager;
 class NetworkAccessManager;
 class BrowserApplication : public QApplication
@@ -102,6 +103,7 @@ public:
     static DownloadManager *downloadManager();
     static NetworkAccessManager *networkAccessManager();
     static BookmarksManager *bookmarksManager();
+    static ExtensionManager *extensionManager();
 
     QString dataDirectory() const;
 
@@ -130,6 +132,7 @@ private:
     static DownloadManager *s_downloadManager;
     static NetworkAccessManager *s_networkAccessManager;
     static BookmarksManager *s_bookmarksManager;
+    static ExtensionManager *s_extensionManager;
 
     QList<QPointer<BrowserMainWindow> > m_mainWindows;
     QLocalServer *m_localServer;

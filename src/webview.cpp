@@ -65,6 +65,7 @@
 #include "browsermainwindow.h"
 #include "cookiejar.h"
 #include "downloadmanager.h"
+#include "extensionmanager.h"
 #include "networkaccessmanager.h"
 #include "tabwidget.h"
 #include "webview.h"
@@ -202,6 +203,13 @@ void WebPage::handleUnsupportedContent(QNetworkReply *reply)
     }
 }
 
+QString WebPage::userAgentForUrl(const QUrl &url) const
+{
+    QString extensionResult = BrowserApplication::extensionManager()->userAgentForUrl(url);
+    if (!extensionResult.isEmpty())
+        return extensionResult;
+    return QWebPage::userAgentForUrl(url);
+}
 
 WebView::WebView(QWidget* parent)
     : QWebView(parent)

@@ -69,6 +69,7 @@
 #include "browserapplication.h"
 #include "clearprivatedata.h"
 #include "downloadmanager.h"
+#include "extensionmanager.h"
 #include "history.h"
 #include "settings.h"
 #include "tabbar.h"
@@ -475,6 +476,8 @@ void BrowserMainWindow::setupMenu()
     a = toolsMenu->addAction(tr("Enable Web &Inspector"), this, SLOT(slotToggleInspector(bool)));
     a->setCheckable(true);
 #endif
+    ExtensionManager *extensionManager = BrowserApplication::extensionManager();
+    toolsMenu->addActions(extensionManager->getActionsForMenu("MainWindow_ToolsMenu"));
 
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(tr("About &Qt"), qApp, SLOT(aboutQt()));

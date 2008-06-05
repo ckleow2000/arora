@@ -66,6 +66,7 @@
 #include "browsermainwindow.h"
 #include "cookiejar.h"
 #include "downloadmanager.h"
+#include "extensionmanager.h"
 #include "history.h"
 #include "networkaccessmanager.h"
 #include "tabwidget.h"
@@ -92,6 +93,7 @@ DownloadManager *BrowserApplication::s_downloadManager = 0;
 HistoryManager *BrowserApplication::s_historyManager = 0;
 NetworkAccessManager *BrowserApplication::s_networkAccessManager = 0;
 BookmarksManager *BrowserApplication::s_bookmarksManager = 0;
+ExtensionManager *BrowserApplication::s_extensionManager = 0;
 
 BrowserApplication::BrowserApplication(int &argc, char **argv)
     : QApplication(argc, argv)
@@ -165,6 +167,7 @@ BrowserApplication::~BrowserApplication()
     qDeleteAll(m_mainWindows);
     delete s_networkAccessManager;
     delete s_bookmarksManager;
+    delete s_extensionManager;
 }
 
 #if defined(Q_WS_MAC)
@@ -464,13 +467,20 @@ HistoryManager *BrowserApplication::historyManager()
 
 BookmarksManager *BrowserApplication::bookmarksManager()
 {
-    if (!s_bookmarksManager) {
+    if (!s_bookmarksManager)
         s_bookmarksManager = new BookmarksManager;
-    }
     return s_bookmarksManager;
 }
 
-QIcon BrowserApplication::icon(const QUrl &url)
+ExtensionManager *BrowserApplication::extensionManager()
+{
+    if (!s_extensionManager)
+        s_extensionManager = new ExtensionManager;
+    return s_extensionManager;
+
+}
+
+QIcon BrowserApplication::icon(const QUrl &url) const
 {
     QIcon icon = QWebSettings::iconForUrl(url);
     if (!icon.isNull())

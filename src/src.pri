@@ -19,6 +19,8 @@ GITCHANGENUMBER=$$system(git log --pretty=format:%h | wc -l)
 DEFINES += GITVERSION=\"\\\"$$GITVERSION\\\"\"
 DEFINES += GITCHANGENUMBER=\"\\\"$$GITCHANGENUMBER\\\"\"
 
+include(extensions/extensions.pri)
+
 FORMS += \
     aboutdialog.ui \
     addbookmarkdialog.ui \
@@ -44,7 +46,6 @@ HEADERS += \
     downloadmanager.h \
     edittableview.h \
     edittreeview.h \
-    extensions.h \
     history.h \
     modelmenu.h \
     networkaccessmanager.h \
@@ -71,7 +72,6 @@ SOURCES += \
     downloadmanager.cpp \
     edittableview.cpp \
     edittreeview.cpp \
-    extensions.cpp \
     history.cpp \
     modelmenu.cpp \
     networkaccessmanager.cpp \
