@@ -17,8 +17,8 @@
  * Boston, MA  02110-1301  USA
  */
 
-#ifndef EXTENSIONS_H
-#define EXTENSIONS_H
+#ifndef EXTENSIONMANAGER_H
+#define EXTENSIONMANAGER_H
 
 #include <qscriptvalue.h>
 #include <qscriptengine.h>
