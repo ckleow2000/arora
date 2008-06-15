@@ -480,7 +480,7 @@ ExtensionManager *BrowserApplication::extensionManager()
 
 }
 
-QIcon BrowserApplication::icon(const QUrl &url) const
+QIcon BrowserApplication::icon(const QUrl &url)
 {
     QIcon icon = QWebSettings::iconForUrl(url);
     if (!icon.isNull())
