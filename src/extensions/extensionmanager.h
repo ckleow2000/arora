@@ -29,15 +29,17 @@ class Extension : QObject
     Q_OBJECT
 
 public:
-    Extension(const QString &directory);
+    Extension(const QString &directory, QObject *parent = 0);
     ~Extension();
-    QList<QAction*> actions(const QString &menu);
 
+    QString extensionName() const;
+
+    QList<QAction*> actions(const QString &menu);
 
     bool enabled;
     QString directory;
 
-    QScriptEngine engine;
+    QScriptEngine m_engine;
     QScriptValue object;
     QScriptValue global;
 
@@ -45,6 +47,9 @@ private slots:
     void executeAction();
 
 private:
+    void loadSettings();
+    void saveSettings();
+
     QList<QAction*> actionFromValue(const QScriptValue &value);
 };
 

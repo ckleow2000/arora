@@ -18,27 +18,31 @@
  */
 
 #include "extensionmanager.h"
-#include <QtGui/QtGui>
- #include <QScriptValueIterator>
 
 #include "browserapplication.h"
 #include "networkaccessmanager.h"
 #include "cookiejar.h"
 #include "history.h"
 
-#include <QtScript/QtScript>
 #include <qdesktopservices.h>
+#include <qdiriterator.h>
+#include <qfile.h>
 #include <qfilesystemwatcher.h>
+#include <qscriptvalueiterator.h>
+#include <qsettings.h>
+
+#include <qdebug.h>
 
 QScriptValue qtscript_create_QWebSettings_class(QScriptEngine *engine);
 
 Q_DECLARE_METATYPE(QScriptValue)
 
-Extension::Extension(const QString &directory)
-    : enabled(true)
+Extension::Extension(const QString &directory, QObject *parent)
+    : QObject(parent)
+    , enabled(true)
     , directory(directory)
 {
-    QString fileName = directory + "/extension.js";
+    QString fileName = directory + QLatin1String("/extension.js");
     QFile scriptFile(fileName);
     if (!scriptFile.open(QIODevice::ReadOnly)) {
         qWarning() << "Unable to open extention" << fileName << scriptFile.errorString();
@@ -50,19 +54,19 @@ Extension::Extension(const QString &directory)
     scriptFile.close();
 
     BrowserApplication *ba = BrowserApplication::instance();
-    engine.globalObject().setProperty("browserApplication", engine.newQObject(ba));
-    engine.globalObject().setProperty("networkAccessManager", engine.newQObject(ba->networkAccessManager()));
-    engine.globalObject().setProperty("historyManager", engine.newQObject(ba->historyManager()));
-    engine.globalObject().setProperty("cookieJar", engine.newQObject(ba->cookieJar()));
+    m_engine.globalObject().setProperty("browserApplication", m_engine.newQObject(ba));
+    m_engine.globalObject().setProperty("networkAccessManager", m_engine.newQObject(ba->networkAccessManager()));
+    m_engine.globalObject().setProperty("historyManager", m_engine.newQObject(ba->historyManager()));
+    m_engine.globalObject().setProperty("cookieJar", m_engine.newQObject(ba->cookieJar()));
 
-    engine.globalObject().setProperty("QWebSettings",
-        qtscript_create_QWebSettings_class(&engine),
+    m_engine.globalObject().setProperty("QWebSettings",
+        qtscript_create_QWebSettings_class(&m_engine),
         QScriptValue::SkipInEnumeration);
 
-    object = engine.evaluate(contents, fileName);
-    global = engine.globalObject();
-    if (engine.hasUncaughtException()) {
-        qWarning() << "error loading arora extension:" << engine.uncaughtException().toString() << engine.uncaughtExceptionLineNumber();
+    object = m_engine.evaluate(contents, fileName);
+    global = m_engine.globalObject();
+    if (m_engine.hasUncaughtException()) {
+        qWarning() << "error loading arora extension:" << m_engine.uncaughtException().toString() << m_engine.uncaughtExceptionLineNumber();
         enabled = false;
     }
 
@@ -77,10 +81,13 @@ Extension::Extension(const QString &directory)
     enabled = settings.value(QLatin1String("Enabled"), enabled).toBool();
     settings.endGroup();
     settings.endGroup();
+
+    loadSettings();
 }
 
 Extension::~Extension()
 {
+    saveSettings();
     // save if enabled or not
 }
 
@@ -146,26 +153,90 @@ void Extension::executeAction()
         QScriptValue result = v.property("action").call(v);
         //extensions[0]->global);
 
-        /*if (extensions[0]->engine.hasUncaughtException()) {
-            qWarning() << "error running extension:" << extensions[0]->engine.uncaughtException().toString() << extensions[0]->engine.uncaughtExceptionLineNumber();
+        /*if (extensions[0]->m_engine.hasUncaughtException()) {
+            qWarning() << "error running extension:" << extensions[0]->m_engine.uncaughtException().toString() << extensions[0]->m_engine.uncaughtExceptionLineNumber();
         }*/
         action->setChecked(v.property("checked").call(v).toBoolean());
+    }
+}
+
+QString Extension::extensionName() const
+{
+    return object.property("name").toString();
+}
+
+void Extension::loadSettings()
+{
+    QString dataDirectory = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+    QSettings settings(dataDirectory + QLatin1String("/extensions/") + extensionName() + QLatin1String(".ini"), QSettings::IniFormat);
+
+    QScriptValue settingsObject = m_engine.newObject();
+    foreach (QString key, settings.allKeys()) {
+        QVariant value = settings.value(key);
+        QScriptValue scriptValue;
+        if (value.type() != QVariant::Map) {
+            scriptValue = m_engine.newVariant(value);
+        } else {
+            QMap<QString, QVariant> map = value.toMap();
+            scriptValue = m_engine.newObject();
+            QMap<QString, QVariant>::ConstIterator it;
+            QMap<QString, QVariant>::ConstIterator end = map.constEnd();
+            for (it = map.constBegin(); it != end; ++it)
+                scriptValue.setProperty(it.key(), m_engine.newVariant(it.value()));
+        }
+        settingsObject.setProperty(key, scriptValue);
+    }
+
+    m_engine.globalObject().setProperty(QLatin1String("settings"), settingsObject);
+}
+
+void Extension::saveSettings()
+{
+    QString dataDirectory = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+    QSettings settings(dataDirectory + QLatin1String("/extensions/") + extensionName() + QLatin1String(".ini"), QSettings::IniFormat);
+
+    QScriptValue settingsObject = m_engine.globalObject().property(QLatin1String("settings"));
+    QScriptValueIterator it(settingsObject);
+    while (it.hasNext()) {
+        it.next();
+        if (it.name().isEmpty())
+            continue;
+
+        QScriptValue value = it.value();
+        QVariant variant = value.toVariant();
+
+        if (value.isObject()) {
+            QMap<QString, QVariant> map;
+            QScriptValueIterator it(value.toObject());
+            while (it.hasNext()) {
+                it.next();
+                map.insert(it.name(), it.value().toVariant());
+            }
+            variant = map;
+        }
+
+        if (variant.isValid())
+            settings.setValue(it.name(), variant);
     }
 }
 
 ExtensionManager::ExtensionManager(QObject *parent)
     : QObject(parent)
 {
-    QString installedExtensions = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
     QString extensionsDirectoryName = QLatin1String("extensions");
+    // in current path
     loadExtensions(extensionsDirectoryName);
+
+    // up one path
+    loadExtensions("../" + extensionsDirectoryName);
+
+    // user installed
+    QString installedExtensions = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
     loadExtensions(installedExtensions + QLatin1Char('/') + extensionsDirectoryName);
-    //qRegisterMetaType<QScriptValue>("QScriptValue");
 }
 
 ExtensionManager::~ExtensionManager()
 {
-    qDeleteAll(extensions);
 }
 
 QList<QAction*> ExtensionManager::getActionsForMenu(const QString &menu)
@@ -184,7 +255,6 @@ QString ExtensionManager::userAgentForUrl(const QUrl &url)
         QScriptValue property = extensions[i]->object.property("userAgentForUrl");
         QScriptValue result = property.call(extensions[i]->object, args);
         if (result.isString()) {
-            qDebug() << "userAgentForUrl" << property.isFunction() << result.toString();
             if (property.engine()->hasUncaughtException()) {
                 qWarning() << "error running extension:" << property.engine()->uncaughtException().toString() << property.engine()->uncaughtExceptionLineNumber();
             }
@@ -196,11 +266,10 @@ QString ExtensionManager::userAgentForUrl(const QUrl &url)
     return QString();
 }
 
-
 void ExtensionManager::loadExtension(const QString &extensionDirectory)
 {
     qDebug() << "loadExtension" << extensionDirectory;
-    Extension *extension = new Extension(extensionDirectory);
+    Extension *extension = new Extension(extensionDirectory, this);
     extensions.append(extension);
 }
 
@@ -212,59 +281,3 @@ void ExtensionManager::loadExtensions(const QString &dir)
         loadExtension(it.next());
 }
 
-
-/*
-
-   void Script::loadSettings()
-{
-    QScriptValue settingsObject = m_engine->newObject();
-    QSettings settings("settings/" + QFileInfo(m_fileName).baseName() + ".ini", QSettings::IniFormat);
-
-    foreach (QString key, settings.allKeys()) {
-        QVariant value = settings.value(key);
-        QScriptValue propValue = m_engine->newVariant(value);
-
-        if (value.type() == QVariant::Map) {
-            QMap<QString, QVariant> map = value.toMap();
-            propValue = m_engine->newObject();
-            for (QMap<QString, QVariant>::ConstIterator it = map.constBegin(), end = map.constEnd();
-                 it != end; ++it)
-                propValue.setProperty(it.key(), m_engine->newVariant(it.value()));
-        }
-
-        settingsObject.setProperty(key, propValue);
-    }
-
-    m_engine->globalObject().setProperty("settings", settingsObject);
-}
-
-void Script::saveSettings()
-{
-    QScriptValue settingsObject = m_engine->globalObject().property("settings");
-    QSettings settings("settings/" + QFileInfo(m_fileName).baseName() + ".ini", QSettings::IniFormat);
-
-    QScriptValueIterator it(settingsObject);
-    while (it.hasNext()) {
-        it.next();
-        if (it.name().isEmpty())
-            continue;
-        QScriptValue value = it.value();
-        QVariant variant = value.toVariant();
-
-        if (value.isObject()) {
-            QMap<QString, QVariant> map;
-
-            QScriptValueIterator it(value.toObject());
-            while (it.hasNext()) {
-                it.next();
-                map.insert(it.name(), it.value().toVariant());
-            }
-
-            variant = map;
-        }
-
-        if (variant.isValid())
-            settings.setValue(it.name(), variant);
-    }
-}
-*/
