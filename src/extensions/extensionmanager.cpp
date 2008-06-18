@@ -222,21 +222,53 @@ void Extension::saveSettings()
 
 ExtensionManager::ExtensionManager(QObject *parent)
     : QObject(parent)
+    , fileSystemWatcher(new QFileSystemWatcher(this))
+{
+    init();
+    connect(fileSystemWatcher, SIGNAL(directoryChanged(const QString &)),
+            this, SLOT(directoryChanged(const QString &)));
+}
+
+ExtensionManager::~ExtensionManager()
+{
+}
+
+void ExtensionManager::init()
 {
     QString extensionsDirectoryName = QLatin1String("extensions");
+
+    // user installed
+    QString installedExtensions = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+    loadExtensions(installedExtensions + QLatin1Char('/') + extensionsDirectoryName);
+
+    // remove these?
     // in current path
     loadExtensions(extensionsDirectoryName);
 
     // up one path
     loadExtensions("../" + extensionsDirectoryName);
-
-    // user installed
-    QString installedExtensions = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
-    loadExtensions(installedExtensions + QLatin1Char('/') + extensionsDirectoryName);
 }
 
-ExtensionManager::~ExtensionManager()
+void ExtensionManager::loadExtensions(const QString &dir)
 {
+    qDebug() << "loadExtensions" << dir;
+    QDirIterator it(dir, QStringList("*.ext"), QDir::Dirs);
+    while (it.hasNext())
+        loadExtension(it.next());
+}
+
+void ExtensionManager::loadExtension(const QString &extensionDirectory)
+{
+    qDebug() << "loadExtension" << extensionDirectory;
+    Extension *extension = new Extension(extensionDirectory, this);
+    extensions.append(extension);
+    fileSystemWatcher->addPath(extensionDirectory);
+}
+
+void ExtensionManager::directoryChanged(const QString &path)
+{
+    //delete existing extension
+    loadExtension(path);
 }
 
 QList<QAction*> ExtensionManager::getActionsForMenu(const QString &menu)
@@ -264,20 +296,5 @@ QString ExtensionManager::userAgentForUrl(const QUrl &url)
         }
     }
     return QString();
-}
-
-void ExtensionManager::loadExtension(const QString &extensionDirectory)
-{
-    qDebug() << "loadExtension" << extensionDirectory;
-    Extension *extension = new Extension(extensionDirectory, this);
-    extensions.append(extension);
-}
-
-void ExtensionManager::loadExtensions(const QString &dir)
-{
-    qDebug() << "loadExtensions" << dir;
-    QDirIterator it(dir, QStringList("*.ext"), QDir::Dirs);
-    while (it.hasNext())
-        loadExtension(it.next());
 }
 

@@ -68,9 +68,11 @@ public:
     QString userAgentForUrl(const QUrl &url);
 
 private slots:
+    void directoryChanged(const QString &path);
     void loadExtension(const QString &extensionDirectory);
 
 private:
+    void init();
     void loadExtensions(const QString &directory);
 
     QList<Extension*> extensions;
