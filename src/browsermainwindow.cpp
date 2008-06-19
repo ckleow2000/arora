@@ -467,21 +467,28 @@ void BrowserMainWindow::setupMenu()
             this, SLOT(slotAboutToShowWindowMenu()));
     slotAboutToShowWindowMenu();
 
-    QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
-    toolsMenu->addAction(tr("Web &Search"), this, SLOT(slotWebSearch()),
+    m_toolsMenu = menuBar()->addMenu(tr("&Tools"));
+    m_toolsMenu->addAction(tr("Web &Search"), this, SLOT(slotWebSearch()),
                          QKeySequence(tr("Ctrl+K", "Web Search")));
-    toolsMenu->addAction(tr("&Clear Private Data"), this, SLOT(slotClearPrivateData()),
+    m_toolsMenu->addAction(tr("&Clear Private Data"), this, SLOT(slotClearPrivateData()),
                          QKeySequence(tr("Ctrl+Shift+Delete", "Clear Private Data")));
 #ifndef Q_CC_MINGW
-    a = toolsMenu->addAction(tr("Enable Web &Inspector"), this, SLOT(slotToggleInspector(bool)));
+    a = m_toolsMenu->addAction(tr("Enable Web &Inspector"), this, SLOT(slotToggleInspector(bool)));
     a->setCheckable(true);
 #endif
-    ExtensionManager *extensionManager = BrowserApplication::extensionManager();
-    toolsMenu->addActions(extensionManager->getActionsForMenu("MainWindow_ToolsMenu"));
 
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(tr("About &Qt"), qApp, SLOT(aboutQt()));
     helpMenu->addAction(tr("About &Arora"), this, SLOT(slotAboutApplication()));
+
+    ExtensionManager *extensionManager = BrowserApplication::extensionManager();
+    connect(extensionManager, SIGNAL(installExtension(Extension *)),
+            this, SLOT(installExtension(Extension *)));
+}
+
+void BrowserMainWindow::installExtension(Extension *extension)
+{
+    m_toolsMenu->addActions(extension->actions("MainWindow_ToolsMenu"));
 }
 
 void BrowserMainWindow::setupToolBar()

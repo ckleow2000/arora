@@ -70,11 +70,13 @@
 class AutoSaver;
 class BookmarksToolBar;
 class ChaseWidget;
-class QWebFrame;
+class Extension;
 class TabWidget;
 class ToolbarSearch;
 class WebView;
+
 class QSplitter;
+class QWebFrame;
 
 /*!
     The MainWindow of the Browser Application.
@@ -107,6 +109,7 @@ protected:
 
 private slots:
     void save();
+    void installExtension(Extension *extension);
 
     void slotLoadProgress(int);
     void slotUpdateStatusbar(const QString &string);
@@ -173,6 +176,7 @@ private:
     QAction *m_historyForward;
     QMenu *m_historyForwardMenu;
     QMenu *m_windowMenu;
+    QMenu *m_toolsMenu;
     QAction *m_privateBrowsing;
 
     QAction *m_stop;

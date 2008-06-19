@@ -261,6 +261,7 @@ void ExtensionManager::loadExtension(const QString &extensionDirectory)
 {
     qDebug() << "loadExtension" << extensionDirectory;
     Extension *extension = new Extension(extensionDirectory, this);
+    emit installExtension(extension);
     extensions.append(extension);
     fileSystemWatcher->addPath(extensionDirectory);
 }
@@ -268,6 +269,13 @@ void ExtensionManager::loadExtension(const QString &extensionDirectory)
 void ExtensionManager::directoryChanged(const QString &path)
 {
     //delete existing extension
+    foreach (Extension *extension, extensions) {
+        if (extension->directory == path) {
+            extensions.removeOne(extension);
+            extension->deleteLater();
+            break;
+        }
+    }
     loadExtension(path);
 }
 

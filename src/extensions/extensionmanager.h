@@ -24,7 +24,7 @@
 #include <qscriptengine.h>
 #include <qaction.h>
 
-class Extension : QObject
+class Extension : public QObject
 {
     Q_OBJECT
 
@@ -59,6 +59,9 @@ class QFileSystemWatcher;
 class ExtensionManager : public QObject
 {
     Q_OBJECT
+
+signals:
+    void installExtension(Extension *extension);
 
 public:
     ExtensionManager(QObject *parent = 0);
