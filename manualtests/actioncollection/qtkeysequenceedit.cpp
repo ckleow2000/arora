@@ -62,15 +62,29 @@
 
 #include "qtkeysequenceedit.h"
 
+#include "searchlineedit.h"
+
 #include <qevent.h>
 #include <qlayout.h>
 #include <qmenu.h>
 
 QtKeySequenceEdit::QtKeySequenceEdit(QWidget *parent)
-    : QLineEdit(parent)
+    : LineEdit(parent)
     , m_num(0)
 {
     installEventFilter(this);
+
+    setUpdatesEnabled(false);
+    // clear button on the right
+    ClearButton *m_clearButton = new ClearButton(this);
+    connect(m_clearButton, SIGNAL(clicked()),
+            this, SLOT(slotClearShortcut()));
+    connect(this, SIGNAL(textChanged(const QString&)),
+            m_clearButton, SLOT(textChanged(const QString&)));
+    addWidget(m_clearButton, RightSide);
+    m_clearButton->hide();
+    updateTextMargins();
+    setUpdatesEnabled(true);
 }
 
 bool QtKeySequenceEdit::eventFilter(QObject *o, QEvent *e)
@@ -103,7 +117,7 @@ bool QtKeySequenceEdit::eventFilter(QObject *o, QEvent *e)
         return true;
     }
 
-    return QWidget::eventFilter(o, e);
+    return LineEdit::eventFilter(o, e);
 }
 
 void QtKeySequenceEdit::slotClearShortcut()
@@ -173,35 +187,36 @@ int QtKeySequenceEdit::translateModifiers(Qt::KeyboardModifiers state, const QSt
 
 void QtKeySequenceEdit::focusInEvent(QFocusEvent *e)
 {
-    QLineEdit::focusInEvent(e);
+    LineEdit::focusInEvent(e);
     selectAll();
 }
 
 void QtKeySequenceEdit::focusOutEvent(QFocusEvent *e)
 {
     m_num = 0;
-    QLineEdit::focusOutEvent(e);
+    LineEdit::focusOutEvent(e);
 }
 
 void QtKeySequenceEdit::keyPressEvent(QKeyEvent *e)
 {
+    qDebug() << "key press event" << e->key();
     handleKeyEvent(e);
     e->accept();
 }
 
 void QtKeySequenceEdit::keyReleaseEvent(QKeyEvent *e)
 {
-    QLineEdit::event(e);
+    LineEdit::keyReleaseEvent(e);
 }
 
 bool QtKeySequenceEdit::event(QEvent *e)
 {
-    if (e->type() == QEvent::Shortcut ||
-            e->type() == QEvent::ShortcutOverride  ||
-            e->type() == QEvent::KeyRelease) {
+    if (e->type() == QEvent::Shortcut
+        || e->type() == QEvent::ShortcutOverride
+        || e->type() == QEvent::KeyRelease) {
         e->accept();
         return true;
     }
-    return QLineEdit::event(e);
+    return LineEdit::event(e);
 }
 

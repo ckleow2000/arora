@@ -63,16 +63,16 @@
 #ifndef QTSEQUENCEEDIT_H
 #define QTSEQUENCEEDIT_H
 
-#include <qlineedit.h>
+#include <lineedit.h>
 
 /*
     QLineEdit that captures key events for use in a QKeySequence (and in the end shortcuts)
 
     Originally part of the property tool in designer, found in
-    tools/shared/qtpropertybrowser/qtpropertybrowser.[h,cpp]
+    tools/shared/qtpropertybrowser/qtpropertybrowserutils.[h,cpp]
     the code has only been slightly modified to make cross fixing possible in the future.
  */
-class QtKeySequenceEdit : public QLineEdit
+class QtKeySequenceEdit : public LineEdit
 {
     Q_OBJECT
 public:
