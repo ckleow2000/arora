@@ -25,65 +25,102 @@
 
 #include <qmenu.h>
 #include <qstandarditemmodel.h>
+#include <qscrollbar.h>
 
 #include <qdebug.h>
 
 KeyboardShortcutsAction::KeyboardShortcutsAction(QWidget *parent)
     : QWidget(parent)
+    , m_model(0)
 {
     setupUi(this);
-    newRow();
+    connect(editor, SIGNAL(keySequenceChanged(const QKeySequence &)),
+            this, SLOT(keySequenceChanged(const QKeySequence &)));
     connect(defaultButton, SIGNAL(clicked()),
             this, SLOT(resetToDefault()));
 }
 
 void KeyboardShortcutsAction::updatePreviewWidget(const QModelIndex &idx)
 {
+    conflict->hide();
     name->setText(idx.data().toString());
 
     QVariant v = idx.data(KeyboardShortcutsDialog::ActionRole);
-    currentAction = (QAction *) v.value<void *>();
+    m_action = (QAction *) v.value<void *>();
 
     v = idx.data(KeyboardShortcutsDialog::CollectionRole);
-    collection = (ActionCollection *) v.value<void *>();
+    m_collection = (ActionCollection *) v.value<void *>();
 
-    if (!currentAction)
+    if (!m_action)
         return;
 
     icon->setText(QString());
-    icon->setPixmap(currentAction->icon().pixmap(32, 32));
-    QString infoString = currentAction->statusTip();
+    icon->setPixmap(m_action->icon().pixmap(32, 32));
+    QString infoString = m_action->statusTip();
     if (infoString.isEmpty())
-        infoString = currentAction->toolTip();
+        infoString = m_action->toolTip();
     if (infoString.isEmpty())
-        infoString = currentAction->whatsThis();
-    if (infoString == currentAction->text())
+        infoString = m_action->whatsThis();
+    if (infoString == m_action->text())
         infoString = QString();
     info->setText(infoString);
 
-    QList<QKeySequence> actions = currentAction->shortcuts();
-    if (!actions.isEmpty())
-        editor->setKeySequence(actions.first());
-}
-
-void KeyboardShortcutsAction::newRow()
-{
-    editor = new QtKeySequenceEdit(this);
-    connect(editor, SIGNAL(keySequenceChanged(const QKeySequence &)),
-            this, SLOT(keySequenceChanged(const QKeySequence &)));
-    verticalLayout->addWidget(editor);
+    QList<QKeySequence> currentShortcuts = m_action->shortcuts();
+    if (!currentShortcuts.isEmpty())
+        editor->setKeySequence(currentShortcuts.first());
+    defaultButton->setEnabled(currentShortcuts != m_collection->defaultShortcuts(m_action));
+    findConflict(currentShortcuts);
 }
 
 void KeyboardShortcutsAction::resetToDefault()
 {
-    editor->setKeySequence(collection->defaultShortcuts(currentAction).value(0));
+    ActionCollection::Shortcuts shortcuts = m_collection->defaultShortcuts(m_action);
+    editor->setKeySequence(shortcuts.value(0));
+    m_collection->setShortcuts(m_action->objectName(), shortcuts);
+    defaultButton->setEnabled(false);
+    findConflict(shortcuts);
 }
 
 void KeyboardShortcutsAction::keySequenceChanged(const QKeySequence &sequence)
 {
     ActionCollection::Shortcuts shortcuts;
     shortcuts.append(sequence);
-    collection->setShortcuts(currentAction->objectName(), shortcuts);
+    m_collection->setShortcuts(m_action->objectName(), shortcuts);
+
+    QList<QKeySequence> currentShortcuts = m_action->shortcuts();
+    defaultButton->setEnabled(currentShortcuts != m_collection->defaultShortcuts(m_action));
+
+    findConflict(currentShortcuts);
+}
+
+void KeyboardShortcutsAction::findConflict(const ActionCollection::Shortcuts &shortcuts)
+{
+    if (shortcuts.isEmpty()) {
+        conflict->setVisible(false);
+        return;
+    }
+    QAction *isConflict = findConflict(QModelIndex(), shortcuts);
+    conflict->setVisible(isConflict);
+    if (isConflict)
+        conflict->setText(QString("Conflict with: %1").arg(isConflict->text()));
+}
+
+QAction *KeyboardShortcutsAction::findConflict(const QModelIndex &parent,
+        const ActionCollection::Shortcuts &shortcuts)
+{
+    if (!m_model)
+        return false;
+    for (int i = 0; i < m_model->rowCount(parent); ++i) {
+        QModelIndex idx = m_model->index(i, 0, parent);
+        QVariant v = idx.data(KeyboardShortcutsDialog::ActionRole);
+        QAction *action = (QAction *) v.value<void *>();
+        if (action && action != m_action && action->shortcuts() == shortcuts)
+            return action;
+        QAction *r = findConflict(idx, shortcuts);
+        if (r)
+            return r;
+    }
+    return 0;
 }
 
 KeyboardShortcutsColumnView::KeyboardShortcutsColumnView(QWidget *parent)
@@ -95,11 +132,12 @@ KeyboardShortcutsColumnView::KeyboardShortcutsColumnView(QWidget *parent)
     setPreviewWidget(actionWidget);
     connect(this, SIGNAL(updatePreviewWidget(const QModelIndex &)),
             actionWidget, SLOT(updatePreviewWidget(const QModelIndex &)));
+}
 
-    QList<int> widths;
-    widths.append(50);
-    widths.append(80);
-    setColumnWidths(widths);
+void KeyboardShortcutsColumnView::setModel(QAbstractItemModel *model)
+{
+    actionWidget->m_model = model;
+    QColumnView::setModel(model);
 }
 
 KeyboardShortcutsDialog::KeyboardShortcutsDialog(QWidget *parent, Qt::WindowFlags flags)
@@ -110,6 +148,20 @@ KeyboardShortcutsDialog::KeyboardShortcutsDialog(QWidget *parent, Qt::WindowFlag
     connect(search, SIGNAL(textChanged(const QString &)),
             this, SLOT(populateModel()));
     populateModel();
+
+    QFontMetrics fm = columnView->fontMetrics();
+    int firstColumnWidth = 0;
+    for (int i = 0; i < m_model->rowCount(); ++i) {
+        QModelIndex idx = m_model->index(i, 0);
+        QString title = idx.data().toString();
+        firstColumnWidth = qMax(fm.width(title) + fm.height(), firstColumnWidth);
+    }
+    firstColumnWidth += columnView->verticalScrollBar()->sizeHint().width();
+    QList<int> widths;
+    widths.append(firstColumnWidth);
+    widths.append(firstColumnWidth * 1.5);
+    columnView->setColumnWidths(widths);
+    columnView->selectionModel()->select(m_model->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
 
 QModelIndex KeyboardShortcutsDialog::insertRow(const QString &title, const QModelIndex &parent)
@@ -135,32 +187,32 @@ QModelIndex KeyboardShortcutsDialog::insertRow(const QString &title, const QMode
     return m_model->index(row, 0, parent);
 }
 
-void KeyboardShortcutsDialog::addAction(ActionCollection *collection, const QModelIndex &parent, QAction *action)
+void KeyboardShortcutsDialog::addAction(ActionCollection *m_collection, const QModelIndex &parent, QAction *action)
 {
     QString title = action->text();
     QModelIndex idx = insertRow(title, parent);
 
     QVariant v = qVariantFromValue((void *) action);
     m_model->setData(idx, v, ActionRole);
-    v = qVariantFromValue((void *) collection);
+    v = qVariantFromValue((void *) m_collection);
     m_model->setData(idx, v, CollectionRole);
 
     qDebug() << title << action->objectName() << action->shortcuts();
     if (action->menu()) {
         foreach (QAction *a, action->menu()->actions())
-            addAction(collection, idx, a);
+            addAction(m_collection, idx, a);
     }
 }
 
-void KeyboardShortcutsDialog::addCollection(ActionCollection *collection)
+void KeyboardShortcutsDialog::addCollection(ActionCollection *m_collection)
 {
     QModelIndex parent;
-    for (int i = 0; i < collection->menuBarActions.count(); ++i) {
-        QString title = collection->menuBarActions.at(i).first;
+    for (int i = 0; i < m_collection->menuBarActions.count(); ++i) {
+        QString title = m_collection->menuBarActions.at(i).first;
         QModelIndex idx = insertRow(title, QModelIndex());
-        QActionList list = collection->menuBarActions.at(i).second;
+        QActionList list = m_collection->menuBarActions.at(i).second;
         for (int i = 0; i < list.count(); ++i)
-            addAction(collection, idx, list.at(i));
+            addAction(m_collection, idx, list.at(i));
     }
 }
 
@@ -171,8 +223,8 @@ void KeyboardShortcutsDialog::populateModel()
     m_model->clear();
     QList<ActionCollection*> collections = ActionCollection::collections();
     QStringList menuTitles;
-    foreach (ActionCollection *collection, collections)
-        addCollection(collection);
+    foreach (ActionCollection *m_collection, collections)
+        addCollection(m_collection);
 
     columnView->setModel(m_model);
     columnView->previewWidget()->setVisible(m_model->rowCount() > 0);

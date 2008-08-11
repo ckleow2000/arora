@@ -63,6 +63,8 @@ MainWindow::MainWindow(QWidget *parent)
     QActionList quitMenu;
     QAction *action = new QAction("Quit", this);
     action->setObjectName("file_quit");
+    connect(action, SIGNAL(triggered()),
+            this, SLOT(close()));
     quitMenu.append(action);
     setMenu("File", quitMenu);
     setMenu("Edit", QActionList());

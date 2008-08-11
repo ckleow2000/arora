@@ -70,3 +70,4 @@ private:
 };
 
 #endif // ACTIONCOLLECTION_H
+

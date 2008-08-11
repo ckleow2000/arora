@@ -21,6 +21,7 @@
 #define KEYBOARDSHORTCUTSDIALOGS_P_H
 
 #include "ui_action.h"
+#include "actioncollection.h"
 
 class QtKeySequenceEdit;
 class ActionCollection;
@@ -30,18 +31,18 @@ class KeyboardShortcutsAction : public QWidget, public Ui_Action
 
 public:
     KeyboardShortcutsAction(QWidget *parent);
+    QAbstractItemModel *m_model;
 
 public slots:
     void updatePreviewWidget(const QModelIndex &idx);
     void keySequenceChanged(const QKeySequence &sequence);
-    void newRow();
     void resetToDefault();
 
 private:
-
-    ActionCollection *collection;
-    QAction *currentAction;
-    QtKeySequenceEdit *editor;
+    void findConflict(const ActionCollection::Shortcuts &conflict);
+    QAction *findConflict(const QModelIndex &parent, const ActionCollection::Shortcuts &shortcuts);
+    ActionCollection *m_collection;
+    QAction *m_action;
 };
 
 #include <qcolumnview.h>
@@ -52,6 +53,7 @@ class KeyboardShortcutsColumnView : public QColumnView
 
 public:
     KeyboardShortcutsColumnView(QWidget *parent = 0);
+    void setModel(QAbstractItemModel *model);
 
 private:
     KeyboardShortcutsAction *actionWidget;
@@ -59,3 +61,4 @@ private:
 };
 
 #endif // KEYBOARDSHORTCUTSDIALOGS_P_H
+

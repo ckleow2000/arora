@@ -123,7 +123,7 @@ ActionCollection::Shortcuts ActionCollection::defaultShortcuts(const QAction *ac
 }
 
 /*
-    Sets all actions with the objectname \a name to have the shortcuts \a shortcuts
+    Sets all actions with the objectName \a name to have the shortcuts \a shortcuts
  */
 void ActionCollection::setShortcuts(const QString &name, const Shortcuts &shortcuts)
 {
@@ -169,3 +169,4 @@ void ActionCollection::setShortcuts(QAction *action, const QString &name, const 
         foreach (QAction *child, action->menu()->actions())
             setShortcuts(child, name, shortcuts);
 }
+

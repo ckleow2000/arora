@@ -14,7 +14,7 @@
    <string>Action</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="2">
+   <item row="0" column="0">
     <widget class="QLabel" name="name">
      <property name="font">
       <font>
@@ -25,7 +25,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Action</string>
+      <string>XXX</string>
      </property>
     </widget>
    </item>
@@ -38,14 +38,14 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>O</string>
+      <string>X</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="3">
+   <item row="1" column="0">
     <widget class="QLabel" name="info">
      <property name="text">
-      <string>I do some stuff</string>
+      <string>XXX</string>
      </property>
     </widget>
    </item>
@@ -63,16 +63,16 @@
     </widget>
    </item>
    <item row="2" column="1" colspan="2">
-    <layout class="QVBoxLayout" name="verticalLayout"/>
+    <widget class="QtKeySequenceEdit" name="editor"/>
    </item>
    <item row="3" column="1" colspan="2">
     <widget class="QPushButton" name="defaultButton">
      <property name="text">
-      <string>Default</string>
+      <string>Reset to default</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1" colspan="2">
+   <item row="4" column="1">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -85,8 +85,40 @@
      </property>
     </spacer>
    </item>
+   <item row="5" column="0" colspan="3">
+    <widget class="QLabel" name="conflict">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <italic>true</italic>
+      </font>
+     </property>
+     <property name="text">
+      <string>XXX</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QtKeySequenceEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qtkeysequenceedit.h</header>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>editor</tabstop>
+  <tabstop>defaultButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
