@@ -102,7 +102,7 @@ void KeyboardShortcutsAction::findConflict(const ActionCollection::Shortcuts &sh
     QAction *isConflict = findConflict(QModelIndex(), shortcuts);
     conflict->setVisible(isConflict);
     if (isConflict)
-        conflict->setText(QString("Conflict with: %1").arg(isConflict->text()));
+        conflict->setText(tr("Conflict with: %1").arg(isConflict->text()));
 }
 
 QAction *KeyboardShortcutsAction::findConflict(const QModelIndex &parent,

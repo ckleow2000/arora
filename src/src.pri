@@ -82,6 +82,8 @@ SOURCES += \
     webviewsearch.cpp \
     xbel.cpp
 
+
+include(action/action.pri)
 include(utils/utils.pri)
 
 RESOURCES += data/data.qrc \
