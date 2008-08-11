@@ -67,6 +67,8 @@ void ActionCollection::setMenu(const QString &menuTitle, const QActionList &acti
 
 void ActionCollection::readActionShortcutFromSettings(QAction *action, const QStringList &keys)
 {
+    if (!action)
+        return;
     QString name = action->objectName();
     if (keys.contains(name)) {
         QSettings settings;
