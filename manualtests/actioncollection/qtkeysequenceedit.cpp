@@ -199,7 +199,6 @@ void QtKeySequenceEdit::focusOutEvent(QFocusEvent *e)
 
 void QtKeySequenceEdit::keyPressEvent(QKeyEvent *e)
 {
-    qDebug() << "key press event" << e->key();
     handleKeyEvent(e);
     e->accept();
 }
