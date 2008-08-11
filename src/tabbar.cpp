@@ -68,6 +68,7 @@
 #include <qevent.h>
 #include <qmenu.h>
 #include <qstyle.h>
+#include <qsettings.h>
 #include <qurl.h>
 
 #include <qdebug.h>
@@ -108,6 +109,16 @@ TabBar::TabBar(QWidget *parent)
             this, SLOT(viewTabBar()));
 #if QT_VERSION >= 0x040500
     setMovable(true);
+#endif
+    loadSettings();
+}
+
+void TabBar::loadSettings()
+{
+#if QT_VERSION >= 0x040500
+    QSettings settings;
+    settings.beginGroup(QLatin1String("tabs"));
+    setSelectionBehaviorOnRemove((QTabBar::SelectionBehavior)settings.value(QLatin1String("onTabClosing"), 1).toInt());
 #endif
 }
 

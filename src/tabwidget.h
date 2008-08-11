@@ -137,6 +137,7 @@ public:
 
     QByteArray saveState() const;
     bool restoreState(const QByteArray &state);
+    void loadSettings();
 
 #if QT_VERSION < 0x040500
 protected:

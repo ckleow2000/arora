@@ -87,6 +87,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     loadDefaults();
     loadFromSettings();
+
+#if QT_VERSION < 0x040500
+    tabSelection->hide();
+    tabSelectionLabel->hide();
+#endif
 }
 
 void SettingsDialog::loadDefaults()
@@ -216,6 +221,7 @@ void SettingsDialog::loadFromSettings()
     settings.beginGroup(QLatin1String("tabs"));
     selectTabsWhenCreated->setChecked(settings.value(QLatin1String("selectNewTabs"), false).toBool());
     confirmClosingMultipleTabs->setChecked(settings.value(QLatin1String("confirmClosingMultipleTabs"), true).toBool());
+    tabSelection->setCurrentIndex(settings.value(QLatin1String("onTabClosing"), 1).toInt());
     settings.endGroup();
 }
 
@@ -318,12 +324,17 @@ void SettingsDialog::saveToSettings()
     settings.beginGroup(QLatin1String("tabs"));
     settings.setValue(QLatin1String("selectNewTabs"), selectTabsWhenCreated->isChecked());
     settings.setValue(QLatin1String("confirmClosingMultipleTabs"), confirmClosingMultipleTabs->isChecked());
+    settings.setValue(QLatin1String("onTabClosing"), tabSelection->currentIndex());
     settings.endGroup();
 
     BrowserApplication::instance()->loadSettings();
     BrowserApplication::networkAccessManager()->loadSettings();
     BrowserApplication::cookieJar()->loadSettings();
     BrowserApplication::historyManager()->loadSettings();
+
+    QList<BrowserMainWindow*> mw = BrowserApplication::instance()->mainWindows();
+    for (int i = 0; i < mw.count(); ++i)
+        mw[i]->loadSettings();
 }
 
 void SettingsDialog::accept()

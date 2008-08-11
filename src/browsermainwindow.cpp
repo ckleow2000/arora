@@ -212,6 +212,11 @@ BrowserMainWindow::~BrowserMainWindow()
     m_autoSaver->saveIfNeccessary();
 }
 
+void BrowserMainWindow::loadSettings()
+{
+    m_tabWidget->loadSettings();
+}
+
 void BrowserMainWindow::loadDefaultState()
 {
     QSettings settings;

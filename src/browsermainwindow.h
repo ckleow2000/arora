@@ -99,6 +99,7 @@ public:
     QByteArray saveState(bool withTabs = true) const;
     bool restoreState(const QByteArray &state);
     QAction *showMenuBarAction() const;
+    void loadSettings();
 
 public slots:
     void loadPage(const QString &url);

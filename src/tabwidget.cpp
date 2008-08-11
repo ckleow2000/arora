@@ -849,6 +849,11 @@ QByteArray TabWidget::saveState() const
     return data;
 }
 
+void TabWidget::loadSettings()
+{
+    m_tabBar->loadSettings();
+}
+
 bool TabWidget::restoreState(const QByteArray &state)
 {
     int version = 1;
