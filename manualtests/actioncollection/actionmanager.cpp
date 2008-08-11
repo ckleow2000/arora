@@ -112,12 +112,10 @@ void ActionManager::aboutToShowMenu()
     if (!menu || menu->actions().count() > 0)
         return;
 
-    qDebug() << "about to show" << menu->title();
     QList<ActionCollection*> collections = ActionCollection::collections();
     foreach (ActionCollection *collection, collections) {
         bool disabled = (!collection->actionsAlwaysVisible() && collection != currentDocument);
         const QActionList actions = collection->menu(menu->title());
-        qDebug() << disabled << actions.count();
         foreach (QAction *action, actions) {
             if (disabled) {
                 QAction *deadAction = new QAction(this);
@@ -131,9 +129,8 @@ void ActionManager::aboutToShowMenu()
             QActionList currentActions = menu->actions();
             bool replace = false;
             foreach (QAction *oldAction, currentActions) {
-                if (oldAction->text() == action->text()) {
+                if (oldAction->objectName() == action->objectName()) {
                     if (!disabled) {
-                        qDebug() << "removing";
                         menu->insertAction(oldAction, action);
                         menu->removeAction(oldAction);
                     }
@@ -141,7 +138,6 @@ void ActionManager::aboutToShowMenu()
                 }
             }
             if (!replace) {
-                qDebug() << "adding" << replace << action->text();
                 menu->addAction(action);
             }
         }

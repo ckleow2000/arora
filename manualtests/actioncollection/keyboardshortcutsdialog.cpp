@@ -17,13 +17,14 @@
  * Boston, MA  02110-1301  USA
  */
 
-#include "keyboardshortcutsdialog_p.h"
 #include "keyboardshortcutsdialog.h"
+#include "keyboardshortcutsdialog_p.h"
+
+#include "actioncollection.h"
 #include "qtkeysequenceedit.h"
 
 #include <qmenu.h>
 #include <qstandarditemmodel.h>
-#include "actioncollection.h"
 
 #include <qdebug.h>
 
@@ -31,10 +32,58 @@ KeyboardShortcutsAction::KeyboardShortcutsAction(QWidget *parent)
     : QWidget(parent)
 {
     setupUi(this);
-    addButton->setIcon(QIcon(":addtab.png"));
-    connect(addButton, SIGNAL(clicked()),
-            this, SLOT(newRow()));
+    newRow();
+    connect(defaultButton, SIGNAL(clicked()),
+            this, SLOT(resetToDefault()));
+}
 
+void KeyboardShortcutsAction::updatePreviewWidget(const QModelIndex &idx)
+{
+    name->setText(idx.data().toString());
+
+    QVariant v = idx.data(KeyboardShortcutsDialog::ActionRole);
+    currentAction = (QAction *) v.value<void *>();
+
+    v = idx.data(KeyboardShortcutsDialog::CollectionRole);
+    collection = (ActionCollection *) v.value<void *>();
+
+    if (!currentAction)
+        return;
+
+    icon->setText(QString());
+    icon->setPixmap(currentAction->icon().pixmap(32, 32));
+    QString infoString = currentAction->statusTip();
+    if (infoString.isEmpty())
+        infoString = currentAction->toolTip();
+    if (infoString.isEmpty())
+        infoString = currentAction->whatsThis();
+    if (infoString == currentAction->text())
+        infoString = QString();
+    info->setText(infoString);
+
+    QList<QKeySequence> actions = currentAction->shortcuts();
+    if (!actions.isEmpty())
+        editor->setKeySequence(actions.first());
+}
+
+void KeyboardShortcutsAction::newRow()
+{
+    editor = new QtKeySequenceEdit(this);
+    connect(editor, SIGNAL(keySequenceChanged(const QKeySequence &)),
+            this, SLOT(keySequenceChanged(const QKeySequence &)));
+    verticalLayout->addWidget(editor);
+}
+
+void KeyboardShortcutsAction::resetToDefault()
+{
+    editor->setKeySequence(collection->defaultShortcuts(currentAction).value(0));
+}
+
+void KeyboardShortcutsAction::keySequenceChanged(const QKeySequence &sequence)
+{
+    ActionCollection::Shortcuts shortcuts;
+    shortcuts.append(sequence);
+    collection->setShortcuts(currentAction->objectName(), shortcuts);
 }
 
 KeyboardShortcutsColumnView::KeyboardShortcutsColumnView(QWidget *parent)
@@ -42,7 +91,6 @@ KeyboardShortcutsColumnView::KeyboardShortcutsColumnView(QWidget *parent)
 {
     actionWidget = new KeyboardShortcutsAction(this);
     actionWidget->resize(actionWidget->sizeHint());
-    actionWidget->addButton->setAutoRaise(true);
     actionWidget->show();
     setPreviewWidget(actionWidget);
     connect(this, SIGNAL(updatePreviewWidget(const QModelIndex &)),
@@ -50,79 +98,21 @@ KeyboardShortcutsColumnView::KeyboardShortcutsColumnView(QWidget *parent)
 
     QList<int> widths;
     widths.append(50);
-    widths.append(50);
+    widths.append(80);
     setColumnWidths(widths);
 }
 
-void KeyboardShortcutsAction::updatePreviewWidget(const QModelIndex &idx)
-{
-    tooltip->setText(idx.data().toString());
-    QVariant v = idx.data(KeyboardShortcutsDialog::ActionRole);
-    currentAction = (QAction *) v.value<void *>();
-    if (!currentAction)
-        return;
-
-    foreach (QWidget *w, shortcuts)
-        w->deleteLater();
-    editors.clear();
-    shortcuts.clear();
-    QList<QKeySequence> actions = currentAction->shortcuts();
-    for (int i = 0; i < actions.count(); ++i) {
-        newRow(actions[i]);
-    }
-}
-
-void KeyboardShortcutsAction::newRow(const QKeySequence &sequence)
-{
-    QWidget *widget = new QWidget(this);
-    QGridLayout *gridLayout = new QGridLayout();
-    gridLayout->setContentsMargins(0, 0, 0, 0);
-    QtKeySequenceEdit *shortcut = new QtKeySequenceEdit(widget);
-    shortcut->setKeySequence(sequence);
-    editors.append(shortcut);
-    connect(shortcut, SIGNAL(keySequenceChanged(const QKeySequence &)),
-            this, SLOT(keySequenceChanged(const QKeySequence &)));
-
-    gridLayout->addWidget(shortcut, 0, 0, 1, 1);
-
-    QToolButton *toolButton = new QToolButton(widget);
-    toolButton->setObjectName(QString::fromUtf8("toolButton"));
-    toolButton->setIcon(QIcon(":closetab.png"));
-    gridLayout->addWidget(toolButton, 0, 1, 1, 1);
-    widget->setLayout(gridLayout);
-    verticalLayout->addWidget(widget);
-    shortcuts.append(widget);
-    resize(width(), sizeHint().height());
-}
-
-
-void KeyboardShortcutsAction::keySequenceChanged(const QKeySequence &)
-{
-    QList<QKeySequence> actions;
-    foreach (QtKeySequenceEdit *editor, editors)
-        actions.append(editor->keySequence());
-    currentAction->setShortcuts(actions);
-}
-
-
 KeyboardShortcutsDialog::KeyboardShortcutsDialog(QWidget *parent, Qt::WindowFlags flags)
     : QDialog(parent, flags)
+    , m_model(new QStandardItemModel(this))
 {
     setupUi(this);
-    m_model = new QStandardItemModel(this);
     connect(search, SIGNAL(textChanged(const QString &)),
-            this, SLOT(generate()));
-    generate();
-    connect(m_model, SIGNAL(itemChanged(QStandardItem *)),
-            this, SLOT(itemChanged(QStandardItem *)));
+            this, SLOT(populateModel()));
+    populateModel();
 }
 
-void KeyboardShortcutsDialog::itemChanged(QStandardItem *item)
-{
-    qDebug() << item->text() << "changed";
-}
-
-QModelIndex KeyboardShortcutsDialog::insert(const QString &title, const QModelIndex &parent)
+QModelIndex KeyboardShortcutsDialog::insertRow(const QString &title, const QModelIndex &parent)
 {
     QString searchString = search->text().toLower();
     int row = -1;
@@ -140,23 +130,25 @@ QModelIndex KeyboardShortcutsDialog::insert(const QString &title, const QModelIn
         row = m_model->rowCount(parent) - 1;
         QModelIndex idx = m_model->index(row, 0, parent);
         m_model->setData(idx, title);
-        qDebug() << "add" << title;
     }
 
     return m_model->index(row, 0, parent);
 }
 
-void KeyboardShortcutsDialog::addAction(const QModelIndex &parent, QAction *action)
+void KeyboardShortcutsDialog::addAction(ActionCollection *collection, const QModelIndex &parent, QAction *action)
 {
     QString title = action->text();
-    QModelIndex idx = insert(title, parent);
+    QModelIndex idx = insertRow(title, parent);
 
     QVariant v = qVariantFromValue((void *) action);
     m_model->setData(idx, v, ActionRole);
+    v = qVariantFromValue((void *) collection);
+    m_model->setData(idx, v, CollectionRole);
 
+    qDebug() << title << action->objectName() << action->shortcuts();
     if (action->menu()) {
         foreach (QAction *a, action->menu()->actions())
-            addAction(idx, a);
+            addAction(collection, idx, a);
     }
 }
 
@@ -165,23 +157,26 @@ void KeyboardShortcutsDialog::addCollection(ActionCollection *collection)
     QModelIndex parent;
     for (int i = 0; i < collection->menuBarActions.count(); ++i) {
         QString title = collection->menuBarActions.at(i).first;
-        QModelIndex idx = insert(title, QModelIndex());
+        QModelIndex idx = insertRow(title, QModelIndex());
         QActionList list = collection->menuBarActions.at(i).second;
         for (int i = 0; i < list.count(); ++i)
-            addAction(idx, list.at(i));
+            addAction(collection, idx, list.at(i));
     }
 }
 
-void KeyboardShortcutsDialog::generate()
+void KeyboardShortcutsDialog::populateModel()
 {
+    columnView->setUpdatesEnabled(false);
     columnView->setModel(0);
     m_model->clear();
-    m_model->insertColumn(0);
     QList<ActionCollection*> collections = ActionCollection::collections();
     QStringList menuTitles;
     foreach (ActionCollection *collection, collections)
         addCollection(collection);
 
     columnView->setModel(m_model);
+    columnView->previewWidget()->setVisible(m_model->rowCount() > 0);
+
+    columnView->setUpdatesEnabled(true);
 }
 

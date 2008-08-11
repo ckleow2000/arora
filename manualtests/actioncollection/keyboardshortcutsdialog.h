@@ -23,33 +23,33 @@
 #include <qdialog.h>
 #include "ui_keyboardshortcutsdialog.h"
 
-class QStandardItemModel;
-class QMenu;
 class ActionCollection;
+class QMenu;
 class QStandardItem;
+class QStandardItemModel;
 
 class KeyboardShortcutsDialog : public QDialog, public Ui_ShortcutDialog
 {
     Q_OBJECT
 
 public:
-    KeyboardShortcutsDialog(QWidget *parent = 0, Qt::WindowFlags flags = 0);
     enum Roles {
         ActionRole = Qt::UserRole + 1,
+        CollectionRole = Qt::UserRole + 2,
     };
 
+    KeyboardShortcutsDialog(QWidget *parent = 0, Qt::WindowFlags flags = 0);
+
 private slots:
-    void generate();
-    void itemChanged(QStandardItem *item);
+    void populateModel();
 
 private:
-    QModelIndex insert(const QString &title, const QModelIndex &parent);
-    void addAction(const QModelIndex &parent, QAction *action);
+    QModelIndex insertRow(const QString &title, const QModelIndex &parent);
+    void addAction(ActionCollection *collection, const QModelIndex &parent, QAction *action);
     void addCollection(ActionCollection *collection);
 
     QStandardItemModel *m_model;
-    ActionCollection *m_collection;
-
 };
 
 #endif // KEYBOARDSHORTCUTSDIALOGS_H
+

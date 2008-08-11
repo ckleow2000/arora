@@ -23,6 +23,7 @@
 #include "ui_action.h"
 
 class QtKeySequenceEdit;
+class ActionCollection;
 class KeyboardShortcutsAction : public QWidget, public Ui_Action
 {
     Q_OBJECT
@@ -33,13 +34,14 @@ public:
 public slots:
     void updatePreviewWidget(const QModelIndex &idx);
     void keySequenceChanged(const QKeySequence &sequence);
-    void newRow(const QKeySequence &sequence = QKeySequence());
+    void newRow();
+    void resetToDefault();
 
 private:
 
+    ActionCollection *collection;
     QAction *currentAction;
-    QList<QWidget*> shortcuts;
-    QList<QtKeySequenceEdit*> editors;
+    QtKeySequenceEdit *editor;
 };
 
 #include <qcolumnview.h>

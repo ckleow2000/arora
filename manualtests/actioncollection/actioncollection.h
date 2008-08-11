@@ -24,25 +24,47 @@
 
 typedef QList<QAction*> QActionList;
 
+/*
+    ActionCollection is a container for a collection of actions.  ActionCollection
+    is designed to be used in conjunction with ActionManager and KeyboardShortcutsDialog.
+
+    Actions are stored in the same layout that they should appear in the menuBar.
+
+    For example the list of actions (including sub menu's) for the file menu should
+    be placed in a QActionList and then set on the action collection:
+    actionCollection.setMenu("File", actions);
+
+    ActionCollection takes care of loading and saving shortcuts values from settings if they
+    are not the default values.
+ */
 class ActionCollection
 {
 
 public:
+    typedef QPair<QString, QActionList> Menu;
+    typedef QList<QKeySequence> Shortcuts;
+
     ActionCollection();
     ~ActionCollection();
 
-    typedef QPair<QString, QActionList> Menu;
-    QList<Menu> menuBarActions;
-
-    QActionList menu(const QString &title);
-    void setMenu(const QString &title, QActionList actions);
-
-    static QList<ActionCollection*> collections();
+    QActionList menu(const QString &menuTitle) const;
+    void setMenu(const QString &menuTitle, const QActionList &actions);
 
     bool actionsAlwaysVisible() const;
     void setActionsAlwaysVisible(bool visible);
 
+    Shortcuts defaultShortcuts(const QAction *action) const;
+    static void setShortcuts(const QString &name, const Shortcuts &shortcuts);
+
+    static QList<ActionCollection*> collections();
+
+    QList<Menu> menuBarActions;
+
 private:
+    void readActionShortcutFromSettings(QAction *action, const QStringList &keys);
+    void setShortcuts(QAction *action, const QString &name, const Shortcuts &shortcuts);
+
+    QHash<QString, Shortcuts> m_defaultShortcuts;
     static QList<ActionCollection*> m_collections;
     bool m_actionsAlwaysVisible;
 };

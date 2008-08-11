@@ -24,12 +24,16 @@ SubWebView::SubWebView(QWidget *parent)
     : QWebView(parent)
 {
     QActionList editMenu;
-    editMenu.append(page()->action(QWebPage::Undo));
+    QAction *action = page()->action(QWebPage::Undo);
+    action->setObjectName("edit_undo");
+    editMenu.append(action);
     setMenu("Edit", editMenu);
 
     QActionList viewMenu;
     QAction *reloadAction = page()->action(QWebPage::Reload);
+    reloadAction->setStatusTip("Reload the current webpage");
     reloadAction->setShortcut(tr("ctrl+r"));
+    reloadAction->setObjectName("view_reload");
     viewMenu.append(reloadAction);
     setMenu("View", viewMenu);
     setUrl(QUrl("http://www.google.com/"));
@@ -39,7 +43,9 @@ SubTextEdit::SubTextEdit(QWidget *parent)
     : QTextEdit(parent)
 {
     QActionList editMenu;
-    editMenu.append(new QAction("Undo", this));
+    QAction *action = new QAction("Undo", this);
+    action->setObjectName("edit_undo");
+    editMenu.append(action);
     setMenu("Edit", editMenu);
 }
 
@@ -55,7 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
             this, SLOT(currentChanged(int)));
 
     QActionList quitMenu;
-    quitMenu.append(new QAction("Quit", this));
+    QAction *action = new QAction("Quit", this);
+    action->setObjectName("file_quit");
+    quitMenu.append(action);
     setMenu("File", quitMenu);
     setMenu("Edit", QActionList());
     setMenu("View", QActionList());
