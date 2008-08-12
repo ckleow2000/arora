@@ -23,6 +23,8 @@
 #include "ui_action.h"
 #include "actioncollection.h"
 
+#include <qabstractitemmodel.h>
+
 class QtKeySequenceEdit;
 class ActionCollection;
 class KeyboardShortcutsAction : public QWidget, public Ui_Action
