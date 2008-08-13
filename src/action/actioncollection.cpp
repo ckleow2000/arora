@@ -41,27 +41,29 @@ ActionCollection::~ActionCollection()
 /*!
     Returns the list of actions for the menu \a title
  */
-QActionList ActionCollection::menu(const QString &menuTitle) const
+QMenu *ActionCollection::menu(const QString &menuTitle) const
 {
-    for (int i = 0; i < menuBarActions.count(); ++i)
-        if (menuBarActions.at(i).first == menuTitle)
-            return menuBarActions.at(i).second;
-    return QActionList();
+    for (int i = 0; i < m_menuBar.count(); ++i)
+        if (m_menuBar.at(i)->title() == menuTitle)
+            return m_menuBar[i];
+    return 0;
 }
 
 /*!
     Sets actions on the menu menuTitle and loads any shortcuts from the settings file.
  */
-void ActionCollection::setMenu(const QString &menuTitle, const QActionList &actions)
+void ActionCollection::addMenu(QMenu *menu)
 {
-    menuBarActions.append(Menu(menuTitle, actions));
+    if (!menu)
+        return;
+    m_menuBar.append(menu);
 
     QSettings settings;
     settings.beginGroup(QLatin1String("shortcuts"));
     QStringList keys = settings.allKeys();
     if (keys.isEmpty())
         return;
-    foreach (QAction *action, actions)
+    foreach (QAction *action, menu->actions())
         readActionShortcutFromSettings(action, keys);
 }
 
@@ -130,8 +132,8 @@ ActionCollection::Shortcuts ActionCollection::defaultShortcuts(const QAction *ac
 void ActionCollection::setShortcuts(const QString &name, const Shortcuts &shortcuts)
 {
     foreach (ActionCollection *collection, m_collections) {
-        foreach (Menu menu, collection->menuBarActions) {
-            foreach (QAction *action, menu.second) {
+        foreach (QMenu *menu, collection->m_menuBar) {
+            foreach (QAction *action, menu->actions()) {
                 collection->setShortcuts(action, name, shortcuts);
             }
         }

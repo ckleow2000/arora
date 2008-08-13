@@ -23,30 +23,30 @@
 SubWebView::SubWebView(QWidget *parent)
     : QWebView(parent)
 {
-    QActionList editMenu;
+    QMenu *editMenu = new QMenu("Edit", this);
     QAction *action = page()->action(QWebPage::Undo);
     action->setObjectName("edit_undo");
-    editMenu.append(action);
-    setMenu("Edit", editMenu);
+    editMenu->addAction(action);
+    addMenu(editMenu);
 
-    QActionList viewMenu;
+    QMenu *viewMenu = new QMenu("View", this);
     QAction *reloadAction = page()->action(QWebPage::Reload);
     reloadAction->setStatusTip("Reload the current webpage");
     reloadAction->setShortcut(tr("ctrl+r"));
     reloadAction->setObjectName("view_reload");
-    viewMenu.append(reloadAction);
-    setMenu("View", viewMenu);
+    viewMenu->addAction(reloadAction);
+    addMenu(viewMenu);
     setUrl(QUrl("http://www.google.com/"));
 }
 
 SubTextEdit::SubTextEdit(QWidget *parent)
     : QTextEdit(parent)
 {
-    QActionList editMenu;
+    QMenu *editMenu = new QMenu("Edit", this);
     QAction *action = new QAction("Undo", this);
     action->setObjectName("edit_undo");
-    editMenu.append(action);
-    setMenu("Edit", editMenu);
+    editMenu->addAction(action);
+    addMenu(editMenu);
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -60,25 +60,25 @@ MainWindow::MainWindow(QWidget *parent)
     connect(tabWidget, SIGNAL(currentChanged(int)),
             this, SLOT(currentChanged(int)));
 
-    QActionList quitMenu;
+    QMenu *fileMenu = new QMenu("File", this);
     QAction *action = new QAction("Quit", this);
     action->setObjectName("file_quit");
     connect(action, SIGNAL(triggered()),
             this, SLOT(close()));
-    quitMenu.append(action);
-    setMenu("File", quitMenu);
-    setMenu("Edit", QActionList());
-    setMenu("View", QActionList());
-    setMenu("Bookmarks", QActionList());
+    fileMenu->addAction(action);
+    addMenu(fileMenu);
+    addMenu(new QMenu("Edit", this));
+    addMenu(new QMenu("View", this));
+    addMenu(new QMenu("Bookmarks", this));
 
-    QActionList toolsMenu;
+    QMenu *toolsMenu = new QMenu("Tools", this);
     QAction *a = new QAction("Configure Shortcuts", this);
     connect(a, SIGNAL(triggered()),
             this, SLOT(configureShortcuts()));
-    toolsMenu.append(a);
-    setMenu("Tools", toolsMenu);
+    toolsMenu->addAction(a);
+    addMenu(toolsMenu);
 
-    setMenu("Window", QActionList());
+    addMenu(new QMenu("Window", this));
 
     QMenu *bmenu = new QMenu("Bookmarks", this);
     bmenu->addAction("always here?");

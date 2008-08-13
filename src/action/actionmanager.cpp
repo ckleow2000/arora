@@ -25,6 +25,8 @@
 
 #include <qdebug.h>
 
+typedef QList<QAction*> QActionList;
+
 ActionManager::ActionManager(QMainWindow *parent)
     : QObject(parent)
     , currentDocument(0)
@@ -37,10 +39,9 @@ void ActionManager::makePartOfTheMainWindow(const ActionCollection *actions, boo
     if (actions == 0)
         return;
     QWidget *p = (QWidget*)parent();
-    QList<ActionCollection::Menu>::const_iterator i = actions->menuBarActions.constBegin();
-    while (i != actions->menuBarActions.constEnd()) {
-        QActionList list = (*i).second;
-        foreach (QAction *action, list) {
+    QList<QMenu*>::const_iterator i = actions->menuBar().constBegin();
+    while (i != actions->menuBar().constEnd()) {
+        foreach (QAction *action, (*i)->actions()) {
             if (partOf)
                 p->addAction(action);
             else
@@ -75,8 +76,8 @@ void ActionManager::updateMenuBar()
     QList<ActionCollection*> collections = ActionCollection::collections();
     QStringList menuTitles;
     foreach (ActionCollection *collection, collections) {
-        for (int i = 0; i < collection->menuBarActions.count(); ++i)
-            menuTitles += collection->menuBarActions.at(i).first;
+        for (int i = 0; i < collection->menuBar().count(); ++i)
+            menuTitles += collection->menuBar().at(i)->title();
     }
     foreach (QString title, menuTitles) {
         QMenu *menu = 0;
@@ -115,8 +116,10 @@ void ActionManager::aboutToShowMenu()
     QList<ActionCollection*> collections = ActionCollection::collections();
     foreach (ActionCollection *collection, collections) {
         bool disabled = (!collection->actionsAlwaysVisible() && collection != currentDocument);
-        const QActionList actions = collection->menu(menu->title());
-        foreach (QAction *action, actions) {
+        QMenu *actionCollectionMenu = collection->menu(menu->title());
+        if (!actionCollectionMenu)
+            continue;
+        foreach (QAction *action, actionCollectionMenu->actions()) {
             if (disabled) {
                 QAction *deadAction = new QAction(this);
                 deadAction->setEnabled(false);

@@ -207,10 +207,10 @@ void KeyboardShortcutsDialog::addAction(ActionCollection *m_collection, const QM
 void KeyboardShortcutsDialog::addCollection(ActionCollection *m_collection)
 {
     QModelIndex parent;
-    for (int i = 0; i < m_collection->menuBarActions.count(); ++i) {
-        QString title = m_collection->menuBarActions.at(i).first;
+    for (int i = 0; i < m_collection->menuBar().count(); ++i) {
+        QString title = m_collection->menuBar().at(i)->title();
         QModelIndex idx = insertRow(title, QModelIndex());
-        QActionList list = m_collection->menuBarActions.at(i).second;
+        QList<QAction*> list = m_collection->menuBar().at(i)->actions();
         for (int i = 0; i < list.count(); ++i)
             addAction(m_collection, idx, list.at(i));
     }

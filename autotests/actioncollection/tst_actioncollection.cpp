@@ -21,6 +21,8 @@
 #include <QtGui/QtGui>
 #include <actioncollection.h>
 
+typedef QList<QAction*> QActionList;
+
 class tst_ActionCollection : public QObject
 {
     Q_OBJECT
@@ -47,19 +49,24 @@ private slots:
     void saveShortcut_data();
     void saveShortcut();
     void restoreShortcut();
+
+private:
+    QWidget widget;
 };
 
 // Subclass that exposes the protected functions.
 class SubActionCollection : public ActionCollection
 {
 public:
-    QActionList makeList() {
-        QActionList list;
+    QMenu *makeList() {
+        QMenu *menu = new QMenu(&widget);
         QAction *action1 = new QAction("Foo", 0);
         action1->setObjectName("bar");
-        list.append(action1);
-        return list;
+        menu->addAction(action1);
+        return menu;
     }
+private:
+    QWidget widget;
 
 };
 
@@ -97,10 +104,11 @@ void tst_ActionCollection::actioncollection()
     SubActionCollection collection;
     QCOMPARE(collection.actionsAlwaysVisible(), false);
     QCOMPARE(collection.defaultShortcuts(0), ActionCollection::Shortcuts());
-    QCOMPARE(collection.menu(QString()), QActionList());
+    QCOMPARE(collection.menu(QString()), (QMenu*)0);
+    QCOMPARE(collection.menuBar(), (QList<QMenu*>()));
     collection.setActionsAlwaysVisible(true);
     collection.setActionsAlwaysVisible(false);
-    collection.setMenu(QString(), QActionList());
+    collection.addMenu(0);
     collection.setShortcuts(QString(), ActionCollection::Shortcuts());
 }
 
@@ -155,9 +163,9 @@ void tst_ActionCollection::defaultShortcuts()
 
     SubActionCollection collection;
 
-    QActionList actions;
-    actions.append(action);
-    collection.setMenu("File", actions);
+    QMenu fileMenu("File");
+    fileMenu.addAction(action);
+    collection.addMenu(&fileMenu);
 
     QCOMPARE(collection.defaultShortcuts(action), defaultShortcuts);
 
@@ -173,30 +181,33 @@ Q_DECLARE_METATYPE(QActionList)
 void tst_ActionCollection::menu_data()
 {
     QTest::addColumn<QString>("menuTitle");
-    QTest::addColumn<QActionList>("menu");
+    QTest::addColumn<QActionList>("actions");
     QTest::addColumn<int>("extraMenus");
     QTest::newRow("null") << QString("foo") << QActionList() << 0;
-    QTest::newRow("bar") << QString("foo") << (QActionList() << 0 << 0) << 0;
-    QTest::newRow("bar") << QString("foo") << (QActionList() << 0 << 0) << 1;
-    QTest::newRow("bar") << QString("foo") << (QActionList() << 0 << 0) << 5;
+    QTest::newRow("bar") << QString("foo") << (QActionList() << (new QAction(this)) << (new QAction(this))) << 0;
+    QTest::newRow("bar") << QString("foo") << (QActionList() << (new QAction(this)) << (new QAction(this))) << 1;
+    QTest::newRow("bar") << QString("foo") << (QActionList() << (new QAction(this)) << (new QAction(this))) << 5;
 }
 
 // public QActionList menu(QString const& menuTitle) const
 void tst_ActionCollection::menu()
 {
     QFETCH(QString, menuTitle);
-    QFETCH(QActionList, menu);
+    QFETCH(QActionList, actions);
     QFETCH(int, extraMenus);
 
     SubActionCollection collection;
 
     for (int i = 0; i < extraMenus; ++i) {
-        QActionList list;
-        list << 0 << 0;
-        collection.setMenu(QString("bar%1").arg(i), list);
+        QMenu *menu = new QMenu(QString("bar%1").arg(i), &widget);
+        menu->addAction("test");
+        collection.addMenu(menu);
     }
 
-    collection.setMenu(menuTitle, menu);
+    QMenu *menu = new QMenu(menuTitle, &widget);
+    foreach (QAction *action, actions)
+        menu->addAction(action);
+    collection.addMenu(menu);
 
     QCOMPARE(collection.menu(menuTitle), menu);
 }
@@ -207,14 +218,14 @@ void tst_ActionCollection::setShortcuts()
     SubActionCollection collection;
 
     // top menu
-    QActionList list1 = collection.makeList();
-    collection.setMenu("Test", list1);
+    QMenu *menu = collection.makeList();
+    collection.addMenu(menu);
 
     // another top menu
-    QActionList list2;
+    QMenu *menu2 = new QMenu("Test", &widget);
     QAction *action2 = new QAction("Foo", this);
     action2->setObjectName("bar");
-    list2.append(action2);
+    menu2->addAction(action2);
 
     // a action in a menu in a action
     QMenu *subMenu = new QMenu("sub");
@@ -223,21 +234,21 @@ void tst_ActionCollection::setShortcuts()
     action3->setObjectName("bar");
     subMenu->addAction(action3);
 
-    collection.setMenu("Test", list2);
+    collection.addMenu(menu2);
 
     // a action in a menu in another collection
     SubActionCollection collection2;
-    QActionList list1_2 = collection2.makeList();
-    collection2.setMenu("Test", list1_2);
+    QMenu *list1_2 = collection2.makeList();
+    collection2.addMenu(list1_2);
 
     ActionCollection::Shortcuts shortcuts;
     shortcuts.append(QKeySequence("Ctrl+Z"));
     collection.setShortcuts("bar", shortcuts);
 
-    QCOMPARE(list1[0]->shortcuts(), shortcuts);
+    QCOMPARE(menu->actions()[0]->shortcuts(), shortcuts);
     QCOMPARE(action2->shortcuts(), shortcuts);
     QCOMPARE(action3->shortcuts(), shortcuts);
-    QCOMPARE(list1_2[0]->shortcuts(), shortcuts);
+    QCOMPARE(list1_2->actions()[0]->shortcuts(), shortcuts);
 }
 
 Q_DECLARE_METATYPE(ActionCollection::Shortcuts)
@@ -267,10 +278,10 @@ void tst_ActionCollection::saveShortcut()
     QFETCH(QStringList, keys);
     QFETCH(bool, reset);
     SubActionCollection collection;
-    QActionList list1 = collection.makeList();
-    list1[0]->setObjectName(objectName);
-    ActionCollection::Shortcuts originalShortcuts = list1[0]->shortcuts();
-    collection.setMenu("Test", list1);
+    QMenu *menu = collection.makeList();
+    menu->actions()[0]->setObjectName(objectName);
+    ActionCollection::Shortcuts originalShortcuts = menu->actions()[0]->shortcuts();
+    collection.addMenu(menu);
 
     collection.setShortcuts("bar", shortcuts);
 
@@ -294,11 +305,11 @@ void tst_ActionCollection::restoreShortcut()
     settings.setValue("bar", QStringList() << sequence.toString());
 
     SubActionCollection collection;
-    QActionList list;
+    QMenu menu("Test");
     QAction *action = new QAction("Foo", 0);
     action->setObjectName("bar");
-    list.append(action);
-    collection.setMenu("Test", list);
+    menu.addAction(action);
+    collection.addMenu(&menu);
     QCOMPARE(action->shortcuts(), shortcuts);
 }
 
