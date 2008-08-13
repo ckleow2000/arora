@@ -26,6 +26,7 @@
 #include <qmenu.h>
 #include <qstandarditemmodel.h>
 #include <qscrollbar.h>
+#include <qtimer.h>
 
 #include <qdebug.h>
 
@@ -55,6 +56,8 @@ void KeyboardShortcutsAction::updatePreviewWidget(const QModelIndex &idx)
         return;
 
     icon->setText(QString());
+    QIcon actionIcon = m_action->icon();
+    icon->setVisible(!actionIcon.isNull());
     icon->setPixmap(m_action->icon().pixmap(32, 32));
     QString infoString = m_action->statusTip();
     if (infoString.isEmpty())
@@ -161,15 +164,17 @@ KeyboardShortcutsDialog::KeyboardShortcutsDialog(QWidget *parent, Qt::WindowFlag
     widths.append(firstColumnWidth);
     widths.append(firstColumnWidth * 1.5);
     columnView->setColumnWidths(widths);
-    columnView->selectionModel()->select(m_model->index(0, 0), QItemSelectionModel::SelectCurrent);
+    QTimer::singleShot(1, this, SLOT(selectFirstItem()));
 }
 
 QModelIndex KeyboardShortcutsDialog::insertRow(const QString &title, const QModelIndex &parent)
 {
+    QString strippedTitle = title;
+    strippedTitle.replace(QLatin1Char('&'), QString());
     QString searchString = search->text().toLower();
     int row = -1;
     for (int i = 0; i < m_model->rowCount(parent); ++i) {
-        if (m_model->index(i, 0, parent).data().toString() == title) {
+        if (m_model->index(i, 0, parent).data().toString() == strippedTitle) {
             row = i;
             break;
         }
@@ -181,7 +186,7 @@ QModelIndex KeyboardShortcutsDialog::insertRow(const QString &title, const QMode
         m_model->insertRow(m_model->rowCount(parent), parent);
         row = m_model->rowCount(parent) - 1;
         QModelIndex idx = m_model->index(row, 0, parent);
-        m_model->setData(idx, title);
+        m_model->setData(idx, strippedTitle);
     }
 
     return m_model->index(row, 0, parent);
@@ -230,5 +235,11 @@ void KeyboardShortcutsDialog::populateModel()
     columnView->previewWidget()->setVisible(m_model->rowCount() > 0);
 
     columnView->setUpdatesEnabled(true);
+}
+
+void KeyboardShortcutsDialog::selectFirstItem()
+{
+    columnView->selectionModel()->select(m_model->index(0, 0), QItemSelectionModel::SelectCurrent);
+    columnView->setFocus();
 }
 

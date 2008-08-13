@@ -103,6 +103,7 @@ TabBar::TabBar(QWidget *parent)
     }
 
     m_viewTabBarAction = new QAction(this);
+    m_viewTabBarAction->setObjectName(QLatin1String("view_tabBar"));
     updateViewToolBarAction();
     connect(m_viewTabBarAction, SIGNAL(triggered()),
             this, SLOT(viewTabBar()));

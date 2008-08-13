@@ -98,6 +98,24 @@ QList<ActionCollection*> ActionCollection::collections()
 }
 
 /*
+    Returns the point where menu's should be merged.
+
+    A merge point is a separator with a data that is "mergePoint"
+ */
+QAction *ActionCollection::mergePoint(QMenu *menu)
+{
+    if (!menu)
+        return 0;
+    QList<QAction*> actions = menu->actions();
+    for (int i = 0; i < actions.count(); ++i) {
+        if (actions.at(i)->isSeparator()
+            && actions.at(i)->objectName() == QLatin1String("mergePoint"))
+            return actions.at(i);
+    }
+    return 0;
+}
+
+/*
     Returns true if these actions should always be shown in the menu or not.
 
     Actions that are not always visible are only shown by ActionManager if

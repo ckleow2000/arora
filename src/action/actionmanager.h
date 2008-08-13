@@ -34,7 +34,8 @@ class ActionManager : public QObject
 public:
     ActionManager(QMainWindow *parent = 0);
 
-    void setDocumentActionCollection(const ActionCollection *actions);
+    void addPermanentActions(const ActionCollection *collection);
+    void setDocumentActionCollection(const ActionCollection *collection);
     void setMenu(QMenu *menu);
 
 private slots:

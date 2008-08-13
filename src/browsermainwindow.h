@@ -67,6 +67,8 @@
 #include <qicon.h>
 #include <qurl.h>
 
+class ActionCollection;
+class ActionManager;
 class AutoSaver;
 class BookmarksToolBar;
 class ChaseWidget;
@@ -122,19 +124,12 @@ private slots:
     void slotFilePrint();
     void slotPrivateBrowsing();
     void slotFileSaveAs();
-    void slotEditFind();
-    void slotEditFindNext();
-    void slotEditFindPrevious();
     void slotShowBookmarksDialog();
     void slotAddBookmark();
-    void slotViewTextBigger();
-    void slotViewTextNormal();
-    void slotViewTextSmaller();
     void slotViewMenuBar();
     void slotViewToolbar();
     void slotViewBookmarksBar();
     void slotViewStatusbar();
-    void slotViewPageSource();
     void slotViewFullScreen(bool enable);
 
     void slotWebSearch();
@@ -155,6 +150,8 @@ private slots:
     void geometryChangeRequested(const QRect &geometry);
     void updateToolbarActionText(bool visible);
     void updateBookmarksToolbarActionText(bool visible);
+    void currentChanged(int index);
+    void configureShortcuts();
 
 private:
     void loadDefaultState();
@@ -192,6 +189,9 @@ private:
 
     QIcon m_reloadIcon;
     QIcon m_stopIcon;
+
+    ActionCollection *m_actionCollection;
+    ActionManager *m_actionManager;
 };
 
 #endif // BROWSERMAINWINDOW_H

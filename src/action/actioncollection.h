@@ -21,6 +21,7 @@
 #define ACTIONCOLLECTION_H
 
 #include <qaction.h>
+#include <qhash.h>
 
 /*
     ActionCollection is a container for a collection of actions.  ActionCollection
@@ -56,6 +57,7 @@ public:
     static void setShortcuts(const QString &name, const Shortcuts &shortcuts);
 
     static QList<ActionCollection*> collections();
+    static QAction *mergePoint(QMenu *menu);
 
 private:
     void readActionShortcutFromSettings(QAction *action, const QStringList &keys);

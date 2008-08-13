@@ -42,6 +42,7 @@ public:
 
 private slots:
     void populateModel();
+    void selectFirstItem();
 
 private:
     QModelIndex insertRow(const QString &title, const QModelIndex &parent);

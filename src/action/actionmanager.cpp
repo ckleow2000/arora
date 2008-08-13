@@ -34,29 +34,17 @@ ActionManager::ActionManager(QMainWindow *parent)
 {
 }
 
-void ActionManager::makePartOfTheMainWindow(const ActionCollection *actions, bool partOf)
+void ActionManager::addPermanentActions(const ActionCollection *collection)
 {
-    if (actions == 0)
-        return;
-    QWidget *p = (QWidget*)parent();
-    QList<QMenu*>::const_iterator i = actions->menuBar().constBegin();
-    while (i != actions->menuBar().constEnd()) {
-        foreach (QAction *action, (*i)->actions()) {
-            if (partOf)
-                p->addAction(action);
-            else
-                p->removeAction(action);
-        }
-        ++i;
-    }
+    makePartOfTheMainWindow(collection, true);
 }
 
-void ActionManager::setDocumentActionCollection(const ActionCollection *actions)
+void ActionManager::setDocumentActionCollection(const ActionCollection *collection)
 {
-    if (currentDocument == actions)
+    if (currentDocument == collection)
         return;
     makePartOfTheMainWindow(currentDocument, false);
-    currentDocument = actions;
+    currentDocument = collection;
     makePartOfTheMainWindow(currentDocument, true);
     updateMenuBar();
 }
@@ -69,6 +57,25 @@ void ActionManager::setMenu(QMenu *menu)
     if (menuBarMenus.contains(title))
         menuBarMenus[title]->deleteLater();
     todo[title] = menu;
+}
+
+void ActionManager::makePartOfTheMainWindow(const ActionCollection *actions, bool partOf)
+{
+    if (actions == 0)
+        return;
+    QWidget *p = (QWidget*)parent();
+    QList<QMenu*>::const_iterator i = actions->menuBar().constBegin();
+    while (i != actions->menuBar().constEnd()) {
+        foreach (QAction *action, (*i)->actions()) {
+            if (action->objectName().isEmpty() && !action->isSeparator())
+                qWarning() << "Warning, action" << action->text() << "does have an object name";
+            if (partOf)
+                p->addAction(action);
+            else
+                p->removeAction(action);
+        }
+        ++i;
+    }
 }
 
 void ActionManager::updateMenuBar()
@@ -114,6 +121,7 @@ void ActionManager::aboutToShowMenu()
         return;
 
     QList<ActionCollection*> collections = ActionCollection::collections();
+    QAction *mergePoint = 0;
     foreach (ActionCollection *collection, collections) {
         bool disabled = (!collection->actionsAlwaysVisible() && collection != currentDocument);
         QMenu *actionCollectionMenu = collection->menu(menu->title());
@@ -141,8 +149,14 @@ void ActionManager::aboutToShowMenu()
                 }
             }
             if (!replace) {
-                menu->addAction(action);
+                if (mergePoint)
+                qDebug() << "Adding" << action->text() << "before" << mergePoint->text() << actionCollectionMenu;
+                else
+                qDebug() << "Adding" << action->text() << action->objectName() << "at" << mergePoint << actionCollectionMenu;
+                menu->insertAction(mergePoint, action);
             }
         }
+        if (!mergePoint)
+            mergePoint = ActionCollection::mergePoint(menu);
     }
 }

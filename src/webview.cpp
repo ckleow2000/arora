@@ -250,6 +250,8 @@ WebView::WebView(QWidget* parent)
     m_zoomLevels << 30 << 50 << 67 << 80 << 90;
     m_zoomLevels << 100;
     m_zoomLevels << 110 << 120 << 133 << 150 << 170 << 200 << 240 << 300;
+
+    createWebViewActions();
 }
 
 void WebView::contextMenuEvent(QContextMenuEvent *event)
@@ -386,34 +388,6 @@ void WebView::setProgress(int progress)
     m_progress = progress;
 }
 
-void WebView::zoomIn()
-{
-    int i = m_zoomLevels.indexOf(m_currentZoom);
-    Q_ASSERT(i >= 0);
-
-    if (i < m_zoomLevels.count() - 1)
-        m_currentZoom = m_zoomLevels[i + 1];
-
-    setTextSizeMultiplier(qreal(m_currentZoom) / 100.0);
-}
-
-void WebView::zoomOut()
-{
-    int i = m_zoomLevels.indexOf(m_currentZoom);
-    Q_ASSERT(i >= 0);
-
-    if (i > 0)
-        m_currentZoom = m_zoomLevels[i - 1];
-
-    setTextSizeMultiplier(qreal(m_currentZoom) / 100.0);
-}
-
-void WebView::resetZoom()
-{
-    m_currentZoom = 100;
-    setTextSizeMultiplier(1.0);
-}
-
 void WebView::loadFinished()
 {
     if (100 != m_progress) {
@@ -525,5 +499,115 @@ void WebView::setStatusBarText(const QString &string)
 void WebView::downloadRequested(const QNetworkRequest &request)
 {
     BrowserApplication::downloadManager()->download(request);
+}
+
+void WebView::createWebViewActions()
+{
+    // Edit
+    QMenu *editMenu = new QMenu(tr("&Edit"), this);
+
+    QAction *m_undo = pageAction(QWebPage::Undo);
+    m_undo->setObjectName(QLatin1String("edit_undo"));
+    m_undo->setShortcuts(QKeySequence::Undo);
+    editMenu->addAction(m_undo);
+
+    QAction *m_redo = pageAction(QWebPage::Redo);
+    m_redo->setShortcuts(QKeySequence::Redo);
+    m_redo->setObjectName(QLatin1String("edit_redo"));
+    editMenu->addAction(m_redo);
+
+    editMenu->addSeparator();
+
+    QAction *m_cut = pageAction(QWebPage::Cut);
+    m_cut->setShortcuts(QKeySequence::Cut);
+    m_cut->setObjectName(QLatin1String("edit_cut"));
+    editMenu->addAction(m_cut);
+
+    QAction *m_copy = pageAction(QWebPage::Copy);
+    m_copy->setShortcuts(QKeySequence::Copy);
+    m_copy->setObjectName(QLatin1String("edit_copy"));
+    editMenu->addAction(m_copy);
+
+    QAction *m_paste = pageAction(QWebPage::Paste);
+    m_paste->setShortcuts(QKeySequence::Paste);
+    m_paste->setObjectName(QLatin1String("edit_paste"));
+    editMenu->addAction(m_paste);
+
+    editMenu->addSeparator();
+
+    QAction *m_find = editMenu->addAction(tr("&Find"));
+    m_find->setShortcuts(QKeySequence::Find);
+    QList<QKeySequence> findShortcuts = m_find->shortcuts();
+    findShortcuts.append(QKeySequence(Qt::Key_Slash));
+    m_find->setShortcuts(findShortcuts);
+    m_find->setObjectName(QLatin1String("edit_find"));
+    connect(m_find, SIGNAL(triggered()), this, SIGNAL(showFind()));
+
+    QAction *m_findNext = editMenu->addAction(tr("Find Nex&t"));
+    m_findNext->setShortcuts(QKeySequence::FindNext);
+    m_findNext->setObjectName(QLatin1String("edit_findNext"));
+    connect(m_findNext, SIGNAL(triggered()), this, SIGNAL(findNext()));
+
+    QAction *m_findPrevious = editMenu->addAction(tr("Find P&revious"));
+    m_findPrevious->setShortcuts(QKeySequence::FindPrevious);
+    m_findPrevious->setObjectName(QLatin1String("edit_findPrevious"));
+    connect(m_findPrevious, SIGNAL(triggered()), this, SIGNAL(findPrevious()));
+
+    addMenu(editMenu);
+
+    // View
+    QMenu *viewMenu = new QMenu(tr("&View"), this);
+
+    QAction *m_stop = pageAction(QWebPage::Stop);
+    m_stop->setText(tr("&Stop"));
+    QList<QKeySequence> shortcuts;
+    shortcuts.append(QKeySequence(Qt::CTRL | Qt::Key_Period));
+    shortcuts.append(Qt::Key_Escape);
+    m_stop->setShortcuts(shortcuts);
+    m_stop->setObjectName(QLatin1String("view_stop"));
+    viewMenu->addAction(m_stop);
+
+    QAction *m_reload = pageAction(QWebPage::Reload);
+    m_reload->setText(tr("&Reload Page"));
+    m_reload->setShortcuts(QKeySequence::Refresh);
+    m_reload->setObjectName(QLatin1String("view_reload"));
+    viewMenu->addAction(m_reload);
+
+    QAction *viewTextBigger = viewMenu->addAction(tr("Make Text &Bigger"), this, SLOT(viewTextBigger()), QKeySequence(Qt::CTRL | Qt::Key_Plus));
+    viewTextBigger->setObjectName(QLatin1String("view_textBigger"));
+    QAction *viewTextNormal = viewMenu->addAction(tr("Make Text &Normal"), this, SLOT(viewTextNormal()), QKeySequence(Qt::CTRL | Qt::Key_0));
+    viewTextNormal->setObjectName(QLatin1String("view_textNormal"));
+    QAction *viewTextSmaller = viewMenu->addAction(tr("Make Text &Smaller"), this, SLOT(viewTextSmaller()), QKeySequence(Qt::CTRL | Qt::Key_Minus));
+    viewTextSmaller->setObjectName(QLatin1String("view_textSmaller"));
+
+    addMenu(viewMenu);
+}
+
+void WebView::viewTextBigger()
+{
+    int i = m_zoomLevels.indexOf(m_currentZoom);
+    Q_ASSERT(i >= 0);
+
+    if (i < m_zoomLevels.count() - 1)
+        m_currentZoom = m_zoomLevels[i + 1];
+
+    setTextSizeMultiplier(qreal(m_currentZoom) / 100.0);
+}
+
+void WebView::viewTextSmaller()
+{
+    int i = m_zoomLevels.indexOf(m_currentZoom);
+    Q_ASSERT(i >= 0);
+
+    if (i > 0)
+        m_currentZoom = m_zoomLevels[i - 1];
+
+    setTextSizeMultiplier(qreal(m_currentZoom) / 100.0);
+}
+
+void WebView::viewTextNormal()
+{
+    m_currentZoom = 100;
+    setTextSizeMultiplier(1.0);
 }
 

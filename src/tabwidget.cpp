@@ -122,10 +122,12 @@ TabWidget::TabWidget(QWidget *parent)
     // Actions
     m_newTabAction = new QAction(tr("New &Tab"), this);
     m_newTabAction->setShortcuts(QKeySequence::AddTab);
+    m_newTabAction->setObjectName(QLatin1String("file_newTab"));
     connect(m_newTabAction, SIGNAL(triggered()), this, SLOT(newTab()));
 
     m_closeTabAction = new QAction(tr("&Close Tab"), this);
     m_closeTabAction->setShortcuts(QKeySequence::Close);
+    m_closeTabAction->setObjectName(QLatin1String("file_closeTab"));
     connect(m_closeTabAction, SIGNAL(triggered()), this, SLOT(closeTab()));
 
 #if QT_VERSION < 0x040500
@@ -145,6 +147,7 @@ TabWidget::TabWidget(QWidget *parent)
     shortcuts.append(QKeySequence(Qt::CTRL | Qt::Key_Tab));
     m_nextTabAction->setShortcuts(shortcuts);
     connect(m_nextTabAction, SIGNAL(triggered()), this, SLOT(nextTab()));
+    m_nextTabAction->setObjectName(QLatin1String("file_nextTab"));
 
     m_previousTabAction = new QAction(tr("Show Previous Tab"), this);
     shortcuts.clear();
@@ -155,6 +158,7 @@ TabWidget::TabWidget(QWidget *parent)
     shortcuts.append(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Tab));
     m_previousTabAction->setShortcuts(shortcuts);
     connect(m_previousTabAction, SIGNAL(triggered()), this, SLOT(previousTab()));
+    m_previousTabAction->setObjectName(QLatin1String("file_nextTab"));
 
     m_recentlyClosedTabsMenu = new QMenu(this);
     connect(m_recentlyClosedTabsMenu, SIGNAL(aboutToShow()),
@@ -164,6 +168,7 @@ TabWidget::TabWidget(QWidget *parent)
     m_recentlyClosedTabsAction = new QAction(tr("Recently Closed Tabs"), this);
     m_recentlyClosedTabsAction->setMenu(m_recentlyClosedTabsMenu);
     m_recentlyClosedTabsAction->setEnabled(false);
+    m_recentlyClosedTabsAction->setObjectName(QLatin1String("history_recentTabs"));
 
 #if QT_VERSION >= 0x040500
     m_tabBar->setTabsClosable(true);

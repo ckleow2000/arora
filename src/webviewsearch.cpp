@@ -157,4 +157,11 @@ WebViewWithSearch::WebViewWithSearch(WebView *webView, QWidget *parent)
     m_webViewSearch->setWebView(m_webView);
     layout->addWidget(m_webView);
     setLayout(layout);
+    connect(m_webView, SIGNAL(showFind()),
+            m_webViewSearch, SLOT(showFind()));
+    connect(m_webView, SIGNAL(findNext()),
+            m_webViewSearch, SLOT(findNext()));
+    connect(m_webView, SIGNAL(findPrevious()),
+            m_webViewSearch, SLOT(findPrevious()));
 }
+
