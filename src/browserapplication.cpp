@@ -150,10 +150,21 @@ BrowserApplication::BrowserApplication(int &argc, char **argv)
 #endif
 
     QDesktopServices::setUrlHandler(QLatin1String("http"), this, "openUrl");
-    QString localSysName = QLocale::system().name();
+    const QString localSysName = QLocale::system().name();
 
-    installTranslator(QLatin1String("qt_") + localSysName);
-    installTranslator(dataDirectory() + QDir::separator() + QLatin1String("locale") + QDir::separator() + localSysName);
+    QTranslator *translator = new QTranslator(this);
+    QTranslator *qtTranslator = new QTranslator(this);
+    QString translatorFileName = dataDirectory() + QDir::separator() + QLatin1String("locale") + QDir::separator() + localSysName;
+    QString resourceDir = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+    bool loaded = translator->load(translatorFileName, resourceDir);
+    
+    translatorFileName = QLatin1String("qt_");
+    translatorFileName += localSysName;
+    loaded &= qtTranslator->load(translatorFileName, resourceDir);
+    if (loaded) {
+        installTranslator(translator);
+	installTranslator(qtTranslator);
+    }
 
     // Until QtWebkit defaults to 16
     QWebSettings::globalSettings()->setFontSize(QWebSettings::DefaultFontSize, 16);
@@ -413,13 +424,6 @@ bool BrowserApplication::restoreLastSession()
 bool BrowserApplication::isTheOnlyBrowser() const
 {
     return (m_localServer != 0);
-}
-
-void BrowserApplication::installTranslator(const QString &name)
-{
-    QTranslator *translator = new QTranslator(this);
-    translator->load(name, QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-    QApplication::installTranslator(translator);
 }
 
 #if defined(Q_WS_MAC)
